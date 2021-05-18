@@ -1,0 +1,14 @@
+# kungfupanda-user 5.1 LMY47D 504 release-keys
+- manufacturer: xiaomi
+- platform: mt8173
+- codename: kungfupanda
+- flavor: kungfupanda-user
+- release: 5.1
+- id: LMY47D
+- incremental: 504
+- tags: release-keys
+- fingerprint: Xiaomi/kungfupanda/kungfupanda:5.1/LMY47D/504:user/release-keys
+- is_ab: false
+- brand: Xiaomi
+- branch: kungfupanda-user-5.1-LMY47D-504-release-keys
+- repo: xiaomi_kungfupanda_dump

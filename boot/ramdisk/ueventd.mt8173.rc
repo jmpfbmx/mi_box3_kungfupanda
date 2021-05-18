@@ -1,0 +1,21 @@
+/dev/pvrsrvkm           0766   root         root
+/dev/pvr_sync           0766   root         root
+/dev/ion                0777   root         root
+/dev/trustzone          0660   root         drmrpc
+/dev/devmap		0444   root	    media
+/dev/Vcodec             0660   media        system
+/dev/mtk_disp_mgr				0660   system				graphics
+/dev/graphics/fb0				0660	 system				graphics
+/dev/sw_sync						0660	 system				graphics
+
+# SMI
+/dev/MTK_SMI            0660   system        media
+
+#connectivity start
+# BT
+/dev/stpbt               0660  bluetooth   radio
+/dev/ttyGS0              0660  bluetooth   radio
+# WIFI
+/dev/wmtWifi             0660  system      system
+# webcam
+/dev/video*               0660   system     camera

@@ -1,0 +1,244 @@
+import init.project.rc
+import init.mt8173usb.rc
+import init.no_ssd.rc
+import init.ssd.rc
+import init.aee.rc
+on fs
+    mount ext4 /dev/block/platform/mtk-msdc.0/by-name/system /system noatime ro wait commit=1,noauto_da_alloc
+    exec /system/bin/ext4_resize
+    mount_all /fstab.mt8173
+	mount ext4 /dev/block/platform/mtk-msdc.0/by-name/PERSIST /persist remount
+
+on boot
+  start thermal_manager
+  start thermald
+  start thermal
+  start pq
+
+on init
+    export MI_SECONDARY_STORAGE /storage/usbotg/usbotg-sda1
+
+# HDMI
+chown media system /dev/hdmitx
+chmod 0660 /dev/hdmitx
+
+# LOGO resolution for fast logo
+chown media system /dev/block/mmcblk0p11
+chmod 0660 /dev/block/mmcblk0p11
+
+chown system system /sys/class/misc/mtgpio/pin
+chown system system /sys/class/mifan/mifan_debug_dev/mifan_s
+
+chmod 0664 /dev/mtk_disp_mgr
+
+on post-fs-data
+
+    # dhcp server
+    mkdir /data/misc/dhcp 0770 dhcp wifi
+    chown dhcp wifi /data/misc/dhcp
+
+    # dhcpv6 server 
+    mkdir /data/misc/wide-dhcpv6 0770 dhcp wifi
+    chown dhcp wifi /data/misc/wide-dhcpv6
+
+
+    #set mlock limit to infinate (for m4u operation)
+    setrlimit 8 -1 -1
+
+    # change key_provisioning 
+    mkdir /data/key_provisioning
+    chmod 0770 /data/key_provisioning
+    chown system system /data/key_provisioning 
+    start kisd
+	
+	# create nvram folder
+	mkdir /data/nvram 2771 root system
+    
+    # Change dynamic_boost permission
+    chown system system /sys/devices/platform/dynamic_boost/dynamic_boost
+    chmod 0750 /sys/devices/platform/dynamic_boost/dynamic_boost
+    chown system system /sys/class/amhdmitx/amhdmitx0/edid_physical_address
+    chown system system /sys/class/amhdmitx/amhdmitx0/Tmds2OnOffAndResetHdcp
+    chown system system /sys/class/amhdmitx/amhdmitx0/check_hdcp_status
+
+service kisd /system/bin/kisd
+
+on charger
+	mount ext4 /dev/block/platform/mtk-msdc.0/by-name/system /system ro wait
+	start kpoc_charger
+
+service kpoc_charger /system/bin/kpoc_charger
+	user root
+	group root
+	class charger
+
+on property:init.svc.bootanim=running
+	write /proc/bootprof "BOOT_Animation:START"
+
+on property:init.svc.bootanim=stopped
+	write /proc/bootprof "BOOT_Animation:END"
+	start auto_shutdown
+
+# IMG GPU init
+service pvrsrvctl /system/vendor/bin/pvrsrvctl --no-module  --start   
+	class core 
+	user root    
+	group root    
+	oneshot
+
+service guiext-server /system/bin/guiext-server
+    class main
+    user system
+    group system graphics
+
+service mobile_log_d /system/bin/mobile_log_d
+	class main
+	
+service netdiag /system/bin/netdiag
+    class main
+    socket netdiag stream 0660 root inet
+
+service nvram_daemon /system/bin/nvram_daemon
+    	class main
+    	user root
+    	group system
+    	oneshot
+
+service NvRAMAgent /system/bin/nvram_agent_binder
+	class main
+	user system
+	group system
+
+service auto_shutdown /system/bin/sh /auto_shutdown.sh
+	oneshot
+	disabled
+
+
+service dhcpcd_wlan0   /system/bin/dhcpcd -BK -dd
+    class main
+    user dhcp
+    group net_admin net_raw 
+    disabled
+    oneshot
+
+service dhcpcd_p2p   /system/bin/dhcpcd -BK -dd
+    class main
+    user dhcp
+    group net_admin net_raw 
+    disabled
+    oneshot
+
+service dhcpcd_eth0   /system/bin/dhcpcd -BK -dd
+    class main
+    user dhcp
+    group net_admin net_raw 
+    disabled
+    oneshot
+
+service iprenew_wlan0   /system/bin/dhcpcd -n
+    class main
+    user dhcp
+    group net_admin net_raw 
+    disabled
+    oneshot
+
+service iprenew_p2p   /system/bin/dhcpcd -n
+    class main
+    user dhcp
+    group net_admin net_raw 
+    disabled
+    oneshot
+
+service dhcp6cDNS_wlan0 /system/bin/dhcp6c -c "/etc/wide-dhcpv6/dhcp6cDNS.conf" -Df wlan0
+    disabled
+    oneshot
+
+service dhcp6c_wlan0 /system/bin/dhcp6c -c "/etc/wide-dhcpv6/dhcp6c.conf" -Df wlan0
+    disabled
+    oneshot
+
+on property:service.dhcp6c_wlan0.enable=0
+    stop dhcp6c_wlan0
+
+on property:service.dhcp6c_wlan0.enable=1
+    start dhcp6c_wlan0
+
+service dhcp6c_PD /system/bin/dhcp6c -c "/etc/wide-dhcpv6/dhcp6cPD.conf" -Df
+    disabled
+    oneshot
+
+service thermal_manager /system/bin/thermal_manager
+    disabled
+    user root
+    oneshot
+
+service thermald /system/bin/thermald
+    disabled
+    user system
+    group system
+
+service thermal /system/bin/thermal
+    disabled
+    user system
+    group system
+
+service sbchk /system/bin/sbchk
+    class main
+    user root
+    group system
+    oneshot
+
+service MtkCodecService /system/bin/MtkCodecService
+	  class main
+	  user system
+    group audio media sdcard_r
+
+#
+#emsvr service (start)
+#
+on property:ro.build.type=eng
+    start emsvr
+
+on property:ro.build.type=user
+    start emsvr_user
+
+on property:ro.build.type=userdebug
+    start emsvr_user
+
+service emsvr_user /system/bin/em_svr
+    disabled
+    user system
+    group system radio diag
+
+service emsvr /system/bin/em_svr
+    disabled
+    user root
+	
+service hdmi /system/bin/hdmi
+	class main
+	user system
+  group system net_admin inet
+  onrestart restart zygote
+
+service pq /system/bin/pq
+    class main
+    user system
+    group system graphics
+    oneshot
+    
+service cursorservice /system/bin/cursorservice
+    class main
+    user system
+    group system inet
+
+service triggerhdmi /system/bin/triggerhdmi
+    class main
+    user root
+    group system audio
+    oneshot
+
+#
+#emsvr service (end)
+#
+on property:vold.decrypt=trigger_restart_framework
+    start nvram_daemon
